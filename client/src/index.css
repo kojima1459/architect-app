@@ -133,6 +133,36 @@
   }
 }
 
+@layer utilities {
+  .chat-message-user {
+    @apply bg-primary text-primary-foreground rounded-2xl px-4 py-2 max-w-[80%] ml-auto;
+  }
+
+  .chat-message-ai {
+    @apply bg-secondary text-secondary-foreground rounded-2xl px-4 py-2 max-w-[80%];
+  }
+
+  .phase-indicator {
+    @apply inline-flex items-center justify-center w-8 h-8 rounded-full text-sm font-semibold;
+  }
+
+  .phase-active {
+    @apply bg-primary text-primary-foreground;
+  }
+
+  .phase-completed {
+    @apply bg-green-500 text-white;
+  }
+
+  .phase-pending {
+    @apply bg-muted text-muted-foreground;
+  }
+
+  .gradient-bg {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  }
+}
+
 @layer components {
   /**
    * Custom container utility that centers content and adds responsive padding.

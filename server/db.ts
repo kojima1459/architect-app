@@ -1,6 +1,6 @@
-import { eq } from "drizzle-orm";
+import { eq, desc } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
-import { InsertUser, users } from "../drizzle/schema";
+import { InsertUser, users, conversations, specifications, templates, InsertConversation, InsertSpecification, InsertTemplate } from "../drizzle/schema";
 import { ENV } from './_core/env';
 
 let _db: ReturnType<typeof drizzle> | null = null;
@@ -89,4 +89,94 @@ export async function getUserByOpenId(openId: string) {
   return result.length > 0 ? result[0] : undefined;
 }
 
-// TODO: add feature queries here as your schema grows.
+// Conversation helpers
+export async function createConversation(data: InsertConversation) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  
+  const result = await db.insert(conversations).values(data);
+  return result;
+}
+
+export async function getConversationsByUserId(userId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  
+  return await db.select().from(conversations).where(eq(conversations.userId, userId)).orderBy(desc(conversations.lastUpdated));
+}
+
+export async function getConversationById(id: number) {
+  const db = await getDb();
+  if (!db) return undefined;
+  
+  const result = await db.select().from(conversations).where(eq(conversations.id, id)).limit(1);
+  return result.length > 0 ? result[0] : undefined;
+}
+
+export async function updateConversation(id: number, data: Partial<InsertConversation>) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  
+  await db.update(conversations).set(data).where(eq(conversations.id, id));
+}
+
+export async function deleteConversation(id: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  
+  await db.delete(conversations).where(eq(conversations.id, id));
+}
+
+// Specification helpers
+export async function createSpecification(data: InsertSpecification) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  
+  const result = await db.insert(specifications).values(data);
+  return result;
+}
+
+export async function getSpecificationsByUserId(userId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  
+  return await db.select().from(specifications).where(eq(specifications.userId, userId)).orderBy(desc(specifications.createdAt));
+}
+
+export async function getSpecificationById(id: number) {
+  const db = await getDb();
+  if (!db) return undefined;
+  
+  const result = await db.select().from(specifications).where(eq(specifications.id, id)).limit(1);
+  return result.length > 0 ? result[0] : undefined;
+}
+
+export async function updateSpecification(id: number, data: Partial<InsertSpecification>) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  
+  await db.update(specifications).set(data).where(eq(specifications.id, id));
+}
+
+// Template helpers
+export async function getAllTemplates() {
+  const db = await getDb();
+  if (!db) return [];
+  
+  return await db.select().from(templates);
+}
+
+export async function getTemplatesByCategory(category: string) {
+  const db = await getDb();
+  if (!db) return [];
+  
+  return await db.select().from(templates).where(eq(templates.category, category));
+}
+
+export async function createTemplate(data: InsertTemplate) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  
+  const result = await db.insert(templates).values(data);
+  return result;
+}

@@ -4,10 +4,17 @@ import { Card } from "@/components/ui/card";
 import { APP_LOGO, APP_TITLE, getLoginUrl } from "@/const";
 import { ArrowRight, MessageSquare, FileText, Zap, Sparkles } from "lucide-react";
 import { useLocation } from "wouter";
+import { useEffect } from "react";
 
 export default function Home() {
   const { user, loading } = useAuth();
   const [, setLocation] = useLocation();
+
+  useEffect(() => {
+    if (!loading && user) {
+      setLocation("/chat");
+    }
+  }, [user, loading, setLocation]);
 
   if (loading) {
     return (
@@ -18,7 +25,6 @@ export default function Home() {
   }
 
   if (user) {
-    setLocation("/chat");
     return null;
   }
 

@@ -91,11 +91,21 @@ export async function getUserByOpenId(openId: string) {
 
 // Conversation helpers
 export async function createConversation(data: InsertConversation) {
+  console.log('[DB] createConversation called with:', JSON.stringify(data, null, 2));
   const db = await getDb();
-  if (!db) throw new Error("Database not available");
+  if (!db) {
+    console.error('[DB] Database not available');
+    throw new Error("Database not available");
+  }
   
-  const result = await db.insert(conversations).values(data);
-  return result;
+  try {
+    const result = await db.insert(conversations).values(data);
+    console.log('[DB] Conversation created, result:', result);
+    return result;
+  } catch (error) {
+    console.error('[DB] Failed to create conversation:', error);
+    throw error;
+  }
 }
 
 export async function getConversationsByUserId(userId: number) {

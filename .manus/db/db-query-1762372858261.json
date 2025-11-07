@@ -1,0 +1,50 @@
+{
+  "query": "SELECT * FROM conversations LIMIT 5;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user FgFwwtUbtDZZFFR.a753264f84f0 --database MAXhFf8yK2WV4c3rXp3PrK --execute SELECT * FROM conversations LIMIT 5;",
+  "rows": [
+    {
+      "id": "1",
+      "userId": "1",
+      "conversationData": "{\"answers\": {}, \"messages\": []}",
+      "currentPhase": "1",
+      "lastUpdated": "2025-11-02 09:43:52",
+      "createdAt": "2025-11-02 09:43:52"
+    },
+    {
+      "id": "2",
+      "userId": "1",
+      "conversationData": "{\"answers\": {}, \"messages\": []}",
+      "currentPhase": "1",
+      "lastUpdated": "2025-11-02 09:43:52",
+      "createdAt": "2025-11-02 09:43:52"
+    },
+    {
+      "id": "3",
+      "userId": "1",
+      "conversationData": "{\"answers\": {}, \"messages\": []}",
+      "currentPhase": "1",
+      "lastUpdated": "2025-11-02 09:43:52",
+      "createdAt": "2025-11-02 09:43:52"
+    },
+    {
+      "id": "4",
+      "userId": "1",
+      "conversationData": "{\"answers\": {}, \"messages\": []}",
+      "currentPhase": "1",
+      "lastUpdated": "2025-11-02 09:46:28",
+      "createdAt": "2025-11-02 09:46:28"
+    },
+    {
+      "id": "5",
+      "userId": "1",
+      "conversationData": "{\"answers\": {}, \"messages\": []}",
+      "currentPhase": "1",
+      "lastUpdated": "2025-11-02 09:46:29",
+      "createdAt": "2025-11-02 09:46:29"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tuserId\tconversationData\tcurrentPhase\tlastUpdated\tcreatedAt\n1\t1\t{\"answers\": {}, \"messages\": []}\t1\t2025-11-02 09:43:52\t2025-11-02 09:43:52\n2\t1\t{\"answers\": {}, \"messages\": []}\t1\t2025-11-02 09:43:52\t2025-11-02 09:43:52\n3\t1\t{\"answers\": {}, \"messages\": []}\t1\t2025-11-02 09:43:52\t2025-11-02 09:43:52\n4\t1\t{\"answers\": {}, \"messages\": []}\t1\t2025-11-02 09:46:28\t2025-11-02 09:46:28\n5\t1\t{\"answers\": {}, \"messages\": []}\t1\t2025-11-02 09:46:29\t2025-11-02 09:46:29\n",
+  "stderr": "",
+  "execution_time_ms": 1621
+}

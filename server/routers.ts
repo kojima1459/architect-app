@@ -22,6 +22,7 @@ export const appRouter = router({
   conversation: router({
     // Create new conversation
     create: protectedProcedure.mutation(async ({ ctx }) => {
+      console.log('[Router] Creating conversation for user:', ctx.user.id);
       const result = await db.createConversation({
         userId: ctx.user.id,
         conversationData: {
@@ -30,7 +31,22 @@ export const appRouter = router({
         },
         currentPhase: 1,
       });
-      const insertId = 'insertId' in result ? Number(result.insertId) : 0;
+      console.log('[Router] Create result:', result);
+      console.log('[Router] Result type:', typeof result);
+      console.log('[Router] Result keys:', Object.keys(result));
+      
+      // Try different ways to get insertId
+      let insertId: number;
+      if ('insertId' in result && result.insertId) {
+        insertId = Number(result.insertId);
+      } else if (Array.isArray(result) && result.length > 0 && 'insertId' in result[0]) {
+        insertId = Number(result[0].insertId);
+      } else {
+        console.error('[Router] Could not extract insertId from result:', result);
+        insertId = 0;
+      }
+      
+      console.log('[Router] Extracted insertId:', insertId);
       return { success: true, id: insertId };
     }),
 
@@ -91,25 +107,54 @@ export const appRouter = router({
         userMessage: z.string(),
       }))
       .mutation(async ({ input, ctx }) => {
+        console.log('[Chat API] Received message:', {
+          conversationId: input.conversationId,
+          userId: ctx.user.id,
+          messageLength: input.userMessage.length,
+        });
+
         const conversation = await db.getConversationById(input.conversationId);
-        if (!conversation || conversation.userId !== ctx.user.id) {
+        if (!conversation) {
+          console.error('[Chat API] Conversation not found:', input.conversationId);
+          throw new Error("Conversation not found");
+        }
+        
+        if (conversation.userId !== ctx.user.id) {
+          console.error('[Chat API] User mismatch:', {
+            conversationUserId: conversation.userId,
+            requestUserId: ctx.user.id,
+          });
           throw new Error("Conversation not found");
         }
 
+        const messageCount = conversation.conversationData.messages.length;
+        
         const systemPrompt = `あなたはアプリ設計の専門家です。
-ユーザーの曖昧なアイデアから、Manus1.5で実装可能な仕様書を作成します。
-MECE、実現可能性、UXを重視してください。
+ユーザーの曖昧なアイデアから、Manus1.5で実装可能な要件定義書を作成します。
 
-現在のフェーズ: ${conversation.currentPhase}/5
+【目的】
+開発初心者が「Manus1.5に投げる完璧なプロンプト」を生成するために、以下の情報を質問を通じて収集します：
 
-フェーズ1: アイデアの核心を理解する
-フェーズ2: ユーザー・用途を明確にする
-フェーズ3: コア機能を定義する
-フェーズ4: デザイン・雰囲気を決める
-フェーズ5: 技術的制約を確認する
+1. **アイデアの核心** - 何を作りたいのか、なぜ作るのか
+2. **ターゲットユーザー** - 誰が使うのか、どんなシーンで使うのか
+3. **コア機能** - 必須機能、あったら良い機能、将来的な機能
+4. **認証** - ログインが必要か、誰でも使えるか
+5. **データベース** - どんなデータを保存するのか
+6. **デザイン・雰囲気** - 色、フォント、レイアウトのイメージ
+7. **技術要件** - AI機能、外部API、決済機能など
+8. **画面構成** - 主要なページと画面遷移
 
-ユーザーの回答に基づいて、適切な質問や提案を行ってください。
-必要に応じて選択肢を提示し、具体的な例を挙げてください。`;
+【現在の進捗】
+会話数: ${messageCount}
+
+【指示】
+- 最初の質問でアイデアの核心を把握します
+- 次に、上記の情報を1つずつ丁寧に質問して収集します
+- 具体的な例や選択肢を提示して、初心者でも答えやすくします
+- 10～15回の対話で必要な情報を全て収集します
+- 情報が十分集まったら、「これで必要な情報が揃いました！右上の『要件定義書をダウンロード』ボタンをクリックして、Manusプロンプトを取得してください！」と伝えます
+
+自然でフレンドリーな対話を心がけてください。`;
 
         // Build message history
         const messages = [
@@ -122,10 +167,18 @@ MECE、実現可能性、UXを重視してください。
         ];
 
         // Call LLM
-        const response = await invokeLLM({ messages });
-        const aiMessage = typeof response.choices[0].message.content === 'string' 
-          ? response.choices[0].message.content 
-          : "申し訳ございません。エラーが発生しました。";
+        console.log('[Chat API] Calling LLM with', messages.length, 'messages');
+        let aiMessage: string;
+        try {
+          const response = await invokeLLM({ messages });
+          aiMessage = typeof response.choices[0].message.content === 'string' 
+            ? response.choices[0].message.content 
+            : "申し訳ございません。エラーが発生しました。";
+          console.log('[Chat API] LLM response received, length:', aiMessage.length);
+        } catch (error) {
+          console.error('[Chat API] LLM error:', error);
+          aiMessage = "申し訳ございません。AIの応答生成に失敗しました。もう一度お試しください。";
+        }
 
         // Update conversation
         const updatedMessages = [
@@ -142,12 +195,18 @@ MECE、実現可能性、UXを重視してください。
           },
         ];
 
-        await db.updateConversation(input.conversationId, {
-          conversationData: {
-            ...conversation.conversationData,
-            messages: updatedMessages,
-          },
-        });
+        try {
+          await db.updateConversation(input.conversationId, {
+            conversationData: {
+              ...conversation.conversationData,
+              messages: updatedMessages,
+            },
+          });
+          console.log('[Chat API] Conversation updated successfully');
+        } catch (error) {
+          console.error('[Chat API] Failed to update conversation:', error);
+          throw new Error('会話の更新に失敗しました');
+        }
 
         return {
           aiMessage,
@@ -187,18 +246,59 @@ MECE、実現可能性、UXを重視してください。
         const messages = [
           {
             role: "system" as const,
-            content: `あなたはアプリ設計の専門家です。以下の会話履歴から、完全な仕様書とManusプロンプトを生成してください。
+            content: `あなたはアプリ設計の専門家です。以下の会話履歴から、Manus1.5でそのまま使える完璧な要件定義書を生成してください。
 
-仕様書には以下を含めてください:
-1. アプリ概要（アプリ名、キャッチコピー、ターゲットユーザー、核心的価値）
-2. 機能一覧（必須機能、あったら良い機能、将来的な機能）
-3. 画面遷移図（Mermaid記法）
-4. ワイヤーフレーム
-5. データベース設計
-6. 技術要件
-7. デザイン要件
-8. 実現可能性評価
+【manusPromptに含める内容】
+以下の形式で、Manus1.5にそのままコピペできるプロンプトを作成してください：
 
+"""
+# [アプリ名]
+
+## 概要
+- **キャッチコピー**: [一言で表現]
+- **ターゲットユーザー**: [誰が使うのか]
+- **核心的価値**: [このアプリが解決する問題]
+
+## 主要機能
+### 必須機能
+1. [機能1]: [詳細な説明]
+2. [機能2]: [詳細な説明]
+...
+
+### あったら良い機能
+- [機能]: [説明]
+
+## 認証とユーザー管理
+- [ログインが必要か、誰でも使えるか]
+- [ユーザー情報の管理方法]
+
+## データベース設計
+[保存するデータとテーブル構造を詳細に説明]
+
+## 画面構成とUI/UX
+### 主要な画面
+1. [画面名]: [機能とレイアウトの説明]
+2. [画面名]: [機能とレイアウトの説明]
+...
+
+### ナビゲーション
+[画面間の遷移を説明]
+
+## デザイン要件
+- **色**: [メインカラー、アクセントカラー]
+- **フォント**: [フォントの雰囲気]
+- **雰囲気**: [全体的なデザインの雰囲気]
+
+## 技術要件
+- **AI機能**: [必要なAI機能]
+- **外部API**: [使用するAPI]
+- **その他**: [特殊な技術要件]
+
+## 実装の注意点
+[開発時に気をつけるべきポイント]
+"""
+
+会話履歴から得られた情報を元に、上記の形式で詳細なプロンプトを生成してください。
 JSONフォーマットで返してください。`,
           },
           {

@@ -289,7 +289,7 @@ ${spec.manusPrompt || ''}
                         </button>
                       ))}
                     </div>
-                    <p className="text-xs text-muted-foreground text-center">
+                    <p className="text-lg font-bold text-center text-primary mt-4">
                       または、下の入力欄に自由にアイデアを入力してください
                     </p>
                   </div>
@@ -337,6 +337,37 @@ ${spec.manusPrompt || ''}
             )}
           </div>
         </ScrollArea>
+
+        {/* Usage Guide */}
+        <div className="bg-gradient-to-r from-primary/10 to-primary/5 rounded-xl p-6 mb-4 border border-primary/20">
+          <h3 className="text-lg font-bold text-primary mb-3">💡 使い方ガイド</h3>
+          <ol className="space-y-2 text-sm text-foreground mb-4">
+            <li className="flex items-start gap-2">
+              <span className="font-semibold text-primary min-w-[1.5rem]">1.</span>
+              <span>チャットでAIと対話し、アプリの要件を明確化します</span>
+            </li>
+            <li className="flex items-start gap-2">
+              <span className="font-semibold text-primary min-w-[1.5rem]">2.</span>
+              <span>上部の「要件定義書をダウンロード」ボタンで.mdファイルを取得します</span>
+            </li>
+            <li className="flex items-start gap-2">
+              <span className="font-semibold text-primary min-w-[1.5rem]">3.</span>
+              <span>下記のリンクから<strong>Manus1.5エージェントモード</strong>を開きます</span>
+            </li>
+            <li className="flex items-start gap-2">
+              <span className="font-semibold text-primary min-w-[1.5rem]">4.</span>
+              <span>ダウンロードした要件定義書を添付し、「このアプリを作って」と入力します</span>
+            </li>
+          </ol>
+          <a
+            href="https://app.manus.im"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-2 bg-gradient-to-r from-primary to-primary/80 text-primary-foreground font-semibold px-6 py-3 rounded-lg hover:from-primary/90 hover:to-primary/70 transition-all shadow-md hover:shadow-lg"
+          >
+            <span>🚀 Manus1.5エージェントモードを開く</span>
+          </a>
+        </div>
 
         {/* Input Area - Enlarged */}
         <div className="bg-card/80 backdrop-blur rounded-2xl p-4 shadow-lg border border-primary/20">

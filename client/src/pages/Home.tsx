@@ -60,12 +60,25 @@ export default function Home() {
             必要最小限の質問で要件を引き出し、そのままManusエージェントに渡せるプロンプトを自動生成します。
           </p>
           
-          <Button size="lg" className="text-lg px-8 py-6" asChild>
-            <a href={getLoginUrl()}>
-              今すぐ始める
-              <ArrowRight className="ml-2 w-5 h-5" />
-            </a>
-          </Button>
+          <div className="flex flex-col items-center gap-4">
+            <Button size="lg" className="text-lg px-8 py-6" asChild>
+              <a href={getLoginUrl()}>
+                今すぐ始める
+                <ArrowRight className="ml-2 w-5 h-5" />
+              </a>
+            </Button>
+            <p className="text-sm text-muted-foreground">
+              Manusアカウントをお持ちでない方は
+              <a
+                href="https://manus.im/invitation/3B5F1QPCURXN"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-primary font-semibold hover:underline ml-1"
+              >
+                こちらから登録
+              </a>
+            </p>
+          </div>
         </div>
       </section>
 
@@ -165,12 +178,25 @@ export default function Home() {
           <p className="text-muted-foreground mb-8">
             5分の対話で、Manusで作れるプロンプトが完成します。
           </p>
-          <Button size="lg" className="text-lg px-8 py-6" asChild>
-            <a href={getLoginUrl()}>
-              無料で始める
-              <ArrowRight className="ml-2 w-5 h-5" />
-            </a>
-          </Button>
+          <div className="flex flex-col items-center gap-4">
+            <Button size="lg" className="text-lg px-8 py-6" asChild>
+              <a href={getLoginUrl()}>
+                無料で始める
+                <ArrowRight className="ml-2 w-5 h-5" />
+              </a>
+            </Button>
+            <p className="text-sm text-muted-foreground">
+              Manusアカウントをお持ちでない方は
+              <a
+                href="https://manus.im/invitation/3B5F1QPCURXN"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-primary font-semibold hover:underline ml-1"
+              >
+                こちらから登録
+              </a>
+            </p>
+          </div>
         </div>
       </section>
 

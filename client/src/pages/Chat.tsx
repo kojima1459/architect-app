@@ -50,50 +50,38 @@ export default function Chat() {
         },
       });
     }
-  }, [user, conversationId, conversationCreated]);
+  }, [user, conversationId, conversationCreated, createConversation]);
 
+  // Auto-scroll to bottom when new messages arrive
   useEffect(() => {
     if (scrollRef.current) {
-      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+      const scrollElement = scrollRef.current.querySelector('[data-radix-scroll-area-viewport]');
+      if (scrollElement) {
+        scrollElement.scrollTop = scrollElement.scrollHeight;
+      }
     }
   }, [conversation?.conversationData.messages]);
 
   const handleSendMessage = async () => {
-    if (!message.trim()) {
-      toast.error('メッセージを入力してください');
-      return;
-    }
-    
-    if (!conversationId) {
-      toast.error('会話の初期化中です。しばらくお待ちください。');
-      return;
-    }
+    if (!message.trim() || !conversationId) return;
 
     const userMessage = message;
     setMessage("");
 
-    console.log('Sending message:', userMessage, 'to conversation:', conversationId);
-
     chatMutation.mutate(
+      { conversationId, userMessage },
       {
-        conversationId,
-        userMessage,
-      },
-      {
-        onSuccess: (data) => {
-          console.log('Message sent successfully:', data);
+        onSuccess: () => {
           refetchConversation();
         },
         onError: (error) => {
-          console.error('Failed to send message:', error);
-          toast.error("エラーが発生しました: " + error.message);
-          setMessage(userMessage); // Restore message on error
+          toast.error('エラーが発生しました: ' + error.message);
         },
       }
     );
   };
 
-  const handleClearChat = () => {
+  const handleClearChat = async () => {
     if (!conversationId) return;
     
     if (!confirm('会話をクリアして新しいチャットを開始しますか?')) return;
@@ -114,15 +102,7 @@ export default function Chat() {
   };
 
   const handleDownloadSpec = async () => {
-    if (!conversationId) {
-      toast.error('まず会話を開始してください');
-      return;
-    }
-
-    if (!conversation || conversation.conversationData.messages.length < 5) {
-      toast.error('もう少し質問に答えてから要件定義書を生成してください');
-      return;
-    }
+    if (!conversationId) return;
 
     toast.info('要件定義書を生成中...');
     
@@ -167,18 +147,21 @@ ${spec.manusPrompt || ''}
   }
 
   return (
-    <div className="min-h-screen bg-background flex flex-col">
-      {/* Header */}
-      <header className="border-b bg-card">
-        <div className="container py-4">
+    <div className="min-h-screen bg-gradient-to-b from-background to-muted flex flex-col">
+      {/* Fixed Header */}
+      <header className="sticky top-0 z-50 border-b bg-card/95 backdrop-blur supports-[backdrop-filter]:bg-card/60 shadow-sm">
+        <div className="container py-3">
           <div className="flex items-center justify-between">
-            <h1 className="text-xl font-bold">Architect - アプリ設計支援AI</h1>
+            <h1 className="text-xl font-bold bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent">
+              Architect - アプリ設計支援AI
+            </h1>
             <div className="flex items-center gap-2">
               <Button
-                variant="outline"
+                variant="default"
                 size="sm"
                 onClick={handleDownloadSpec}
                 disabled={generateSpecMutation.isPending || !conversationId}
+                className="bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70"
               >
                 {generateSpecMutation.isPending ? (
                   <Loader2 className="mr-2 w-4 h-4 animate-spin" />
@@ -208,25 +191,45 @@ ${spec.manusPrompt || ''}
       </header>
 
       {/* Main Chat Area */}
-      <div className="flex-1 container py-6 flex flex-col max-w-4xl">
-        <ScrollArea className="flex-1 mb-4" ref={scrollRef}>
-          <div className="space-y-4 pr-4">
+      <div className="flex-1 container py-6 flex flex-col max-w-5xl">
+        <ScrollArea className="flex-1 mb-6" ref={scrollRef}>
+          <div className="space-y-6 pr-4">
             {!conversation?.conversationData.messages.length && (
-              <div className="text-center py-12">
-                <h2 className="text-2xl font-bold mb-4">Architectへようこそ!</h2>
-                <p className="text-muted-foreground mb-4">
-                  あなたのアイデアを実装可能な要件定義書に変えます。
-                </p>
-                <p className="text-sm text-muted-foreground">
-                  質問に答えるだけで、Manus1.5で使えるプロンプトが完成します。<br />
-                  認証、データベース、デザイン、技術要件など、必要な情報を全て収集します。
-                </p>
-                <p className="text-lg font-semibold mt-6">
-                  どんなアプリを作りたいですか?
-                </p>
-                <p className="text-sm text-muted-foreground mt-2">
-                  例: 「ダイエット記録アプリ」「消える手紙アプリ」「タスク管理ツール」
-                </p>
+              <div className="text-center py-16 px-6">
+                <div className="max-w-3xl mx-auto">
+                  <h2 className="text-4xl font-bold mb-6 bg-gradient-to-r from-primary via-primary/80 to-primary/60 bg-clip-text text-transparent">
+                    Architectへようこそ!
+                  </h2>
+                  <p className="text-xl text-foreground mb-6">
+                    あなたのアイデアを実装可能な要件定義書に変えます。
+                  </p>
+                  <p className="text-base text-muted-foreground mb-8 leading-relaxed">
+                    質問に答えるだけで、Manus1.5で使えるプロンプトが完成します。<br />
+                    認証、データベース、デザイン、技術要件など、必要な情報を全て収集します。
+                  </p>
+                  <div className="bg-card/50 backdrop-blur rounded-lg p-8 mb-8 border border-primary/20">
+                    <p className="text-2xl font-semibold mb-4">
+                      どんなアプリを作りたいですか?
+                    </p>
+                    <p className="text-sm text-muted-foreground">
+                      例: 「ダイエット記録アプリ」「消える手紙アプリ」「タスク管理ツール」
+                    </p>
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+                    <div className="bg-primary/10 rounded-lg p-4">
+                      <p className="font-semibold text-primary mb-2">💡 あなただけのアプリを作ろう!</p>
+                      <p className="text-muted-foreground">アイデアを形にする第一歩</p>
+                    </div>
+                    <div className="bg-primary/10 rounded-lg p-4">
+                      <p className="font-semibold text-primary mb-2">🚀 アプリで稼ごう!</p>
+                      <p className="text-muted-foreground">収益化の可能性を探る</p>
+                    </div>
+                    <div className="bg-primary/10 rounded-lg p-4">
+                      <p className="font-semibold text-primary mb-2">✨ アイデアでマネタイズ!</p>
+                      <p className="text-muted-foreground">思いつきを価値に変える</p>
+                    </div>
+                  </div>
+                </div>
               </div>
             )}
             
@@ -235,7 +238,13 @@ ${spec.manusPrompt || ''}
                 key={index}
                 className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}
               >
-                <div className={msg.role === "user" ? "chat-message-user" : "chat-message-ai"}>
+                <div
+                  className={`max-w-[80%] rounded-2xl px-6 py-4 ${
+                    msg.role === "user"
+                      ? "bg-gradient-to-r from-primary to-primary/80 text-primary-foreground shadow-lg"
+                      : "bg-card border border-border shadow-md"
+                  }`}
+                >
                   <Streamdown>{msg.content}</Streamdown>
                 </div>
               </div>
@@ -243,24 +252,17 @@ ${spec.manusPrompt || ''}
             
             {chatMutation.isPending && (
               <div className="flex justify-start">
-                <div className="chat-message-ai">
-                  <Loader2 className="w-4 h-4 animate-spin" />
+                <div className="bg-card border border-border rounded-2xl px-6 py-4 shadow-md">
+                  <Loader2 className="w-5 h-5 animate-spin text-primary" />
                 </div>
               </div>
             )}
           </div>
         </ScrollArea>
 
-        {/* Input Area */}
-        <div className="border-t pt-4">
-          {process.env.NODE_ENV === 'development' && (
-            <div className="text-xs text-muted-foreground mb-2">
-              Debug: conversationId={conversationId || 'null'}, 
-              isPending={createConversation.isPending ? 'true' : 'false'},
-              chatPending={chatMutation.isPending ? 'true' : 'false'}
-            </div>
-          )}
-          <div className="flex gap-2">
+        {/* Input Area - Enlarged */}
+        <div className="bg-card/80 backdrop-blur rounded-2xl p-4 shadow-lg border border-primary/20">
+          <div className="flex gap-3">
             <Input
               value={message}
               onChange={(e) => setMessage(e.target.value)}
@@ -271,21 +273,36 @@ ${spec.manusPrompt || ''}
                 }
               }}
               placeholder="メッセージを入力..."
-              disabled={chatMutation.isPending || !conversationId}
-              className="flex-1"
+              disabled={!conversationId || chatMutation.isPending}
+              className="flex-1 h-16 text-lg px-6 bg-background/50 border-primary/30 focus:border-primary"
             />
             <Button
-              onClick={() => {
-                console.log('Send button clicked', { message, conversationId });
-                handleSendMessage();
-              }}
-              disabled={!message.trim() || chatMutation.isPending || !conversationId}
-              size="icon"
-              title={!conversationId ? '会話の初期化中...' : '送信'}
+              onClick={handleSendMessage}
+              disabled={!message.trim() || chatMutation.isPending}
+              size="lg"
+              className="h-16 px-8 bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70"
             >
-              <Send className="w-4 h-4" />
+              {chatMutation.isPending ? (
+                <Loader2 className="w-6 h-6 animate-spin" />
+              ) : (
+                <Send className="w-6 h-6" />
+              )}
             </Button>
           </div>
+          
+          {/* Debug info */}
+          {process.env.NODE_ENV === 'development' && (
+            <p className="text-xs text-muted-foreground mt-2">
+              Debug: conversationId={conversationId}, isPending={createConversation.isPending.toString()}, chatPending={chatMutation.isPending.toString()}
+            </p>
+          )}
+        </div>
+
+        {/* Footer Catchphrases */}
+        <div className="mt-6 text-center">
+          <p className="text-sm text-muted-foreground">
+            💡 アイデアを形に | 🚀 アプリで稼ぐ | ✨ マネタイズを実現
+          </p>
         </div>
       </div>
     </div>

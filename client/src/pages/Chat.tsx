@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { trpc } from "@/lib/trpc";
-import { Send, Loader2, Trash2, Download } from "lucide-react";
+import { Send, Loader2, Trash2, Download, Mic, MicOff } from "lucide-react";
 import { useEffect, useState, useRef } from "react";
 import { useLocation } from "wouter";
 import { Streamdown } from "streamdown";
@@ -14,6 +14,8 @@ export default function Chat() {
   const [, setLocation] = useLocation();
   const [conversationId, setConversationId] = useState<number | null>(null);
   const [message, setMessage] = useState("");
+  const [isListening, setIsListening] = useState(false);
+  const recognitionRef = useRef<any>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
 
   // Create conversation once when user is authenticated
@@ -101,6 +103,55 @@ export default function Chat() {
     );
   };
 
+  // Voice input handler
+  const toggleVoiceInput = () => {
+    if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
+      toast.error('このブラウザは音声入力に対応していません');
+      return;
+    }
+
+    if (isListening) {
+      // Stop listening
+      if (recognitionRef.current) {
+        recognitionRef.current.stop();
+      }
+      setIsListening(false);
+      return;
+    }
+
+    // Start listening
+    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    const recognition = new SpeechRecognition();
+    
+    recognition.lang = 'ja-JP';
+    recognition.continuous = false;
+    recognition.interimResults = false;
+
+    recognition.onstart = () => {
+      setIsListening(true);
+      toast.info('音声入力中...');
+    };
+
+    recognition.onresult = (event: any) => {
+      const transcript = event.results[0][0].transcript;
+      setMessage(prev => prev + (prev ? ' ' : '') + transcript);
+      toast.success('音声をテキストに変換しました');
+    };
+
+    recognition.onerror = (event: any) => {
+      console.error('Speech recognition error:', event.error);
+      toast.error('音声認識エラー: ' + event.error);
+      setIsListening(false);
+    };
+
+    recognition.onend = () => {
+      setIsListening(false);
+    };
+
+    recognitionRef.current = recognition;
+    recognition.start();
+  };
+
   const handleDownloadSpec = async () => {
     if (!conversationId) return;
 
@@ -182,7 +233,7 @@ ${spec.manusPrompt || ''}
               <Button variant="outline" size="sm" onClick={() => setLocation("/history")}>
                 履歴
               </Button>
-              <Button variant="ghost" size="sm" onClick={logout}>
+              <Button variant="outline" size="sm" onClick={logout} className="border-red-500 text-red-500 hover:bg-red-50">
                 ログアウト
               </Button>
             </div>
@@ -263,6 +314,19 @@ ${spec.manusPrompt || ''}
         {/* Input Area - Enlarged */}
         <div className="bg-card/80 backdrop-blur rounded-2xl p-4 shadow-lg border border-primary/20">
           <div className="flex gap-3">
+            <Button
+              onClick={toggleVoiceInput}
+              disabled={!conversationId || chatMutation.isPending}
+              size="lg"
+              variant={isListening ? "destructive" : "outline"}
+              className="h-16 px-6"
+            >
+              {isListening ? (
+                <MicOff className="w-6 h-6" />
+              ) : (
+                <Mic className="w-6 h-6" />
+              )}
+            </Button>
             <Input
               value={message}
               onChange={(e) => setMessage(e.target.value)}
@@ -290,12 +354,7 @@ ${spec.manusPrompt || ''}
             </Button>
           </div>
           
-          {/* Debug info */}
-          {process.env.NODE_ENV === 'development' && (
-            <p className="text-xs text-muted-foreground mt-2">
-              Debug: conversationId={conversationId}, isPending={createConversation.isPending.toString()}, chatPending={chatMutation.isPending.toString()}
-            </p>
-          )}
+
         </div>
 
         {/* Footer Catchphrases */}

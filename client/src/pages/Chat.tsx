@@ -3,11 +3,12 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { trpc } from "@/lib/trpc";
-import { Send, Loader2, Trash2, Download, Mic, MicOff } from "lucide-react";
+import { Send, Loader2, Trash2, Download, Mic, MicOff, ArrowRight } from "lucide-react";
 import { useEffect, useState, useRef } from "react";
 import { useLocation } from "wouter";
 import { Streamdown } from "streamdown";
 import { toast } from "sonner";
+import { appTemplates } from "@/data/templates";
 
 export default function Chat() {
   const { user, loading: authLoading, logout } = useAuth();
@@ -259,11 +260,37 @@ ${spec.manusPrompt || ''}
                     認証、データベース、デザイン、技術要件など、必要な情報を全て収集します。
                   </p>
                   <div className="bg-card/50 backdrop-blur rounded-lg p-8 mb-8 border border-primary/20">
-                    <p className="text-2xl font-semibold mb-4">
+                    <p className="text-2xl font-semibold mb-6">
                       どんなアプリを作りたいですか?
                     </p>
-                    <p className="text-sm text-muted-foreground">
-                      例: 「ダイエット記録アプリ」「消える手紙アプリ」「タスク管理ツール」
+                    <p className="text-sm text-muted-foreground mb-6">
+                      テンプレートから選ぶか、自由に入力してください
+                    </p>
+                    {/* Template Cards */}
+                    <div className="grid grid-cols-2 md:grid-cols-3 gap-3 mb-6">
+                      {appTemplates.map((template) => (
+                        <button
+                          key={template.id}
+                          onClick={() => {
+                            if (conversationId) {
+                              setMessage(template.initialPrompt);
+                              toast.success(`${template.title}テンプレートを選択しました`);
+                            }
+                          }}
+                          disabled={!conversationId}
+                          className={`group relative overflow-hidden rounded-xl p-4 text-left transition-all hover:scale-105 hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed bg-gradient-to-br ${template.color}`}
+                        >
+                          <div className="relative z-10">
+                            <div className="text-3xl mb-2">{template.icon}</div>
+                            <p className="font-semibold text-white text-sm mb-1">{template.title}</p>
+                            <p className="text-xs text-white/80">{template.description}</p>
+                          </div>
+                          <ArrowRight className="absolute bottom-2 right-2 w-4 h-4 text-white/60 group-hover:text-white transition-colors" />
+                        </button>
+                      ))}
+                    </div>
+                    <p className="text-xs text-muted-foreground text-center">
+                      または、下の入力欄に自由にアイデアを入力してください
                     </p>
                   </div>
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
